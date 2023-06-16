@@ -9,12 +9,14 @@ import { get_categories } from "redux/actions/categories/categories"
 import { PaperClipIcon } from '@heroicons/react/20/solid'
 import axios from "axios"
 import DOMPurify from "dompurify"
-import {CKEditor} from '@ckeditor/ckeditor5-react'
+import { CKEditor } from '@ckeditor/ckeditor5-react'
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 function EditPost({
     post,
     get_blog,
-    isAuthenticated
+    isAuthenticated,
+    get_categories,
+    categories,
 }) {
 
     const params = useParams()
@@ -23,13 +25,15 @@ function EditPost({
     useEffect(() => {
         window.scrollTo(0, 0)
         get_blog(slug)
-        console.log(formData)
+        categories ? <></> : get_categories()
     }, [])
 
     const [updateTitle, setUpdateTitle] = useState(false)
     const [updateTime, setUpdateTime] = useState(false)
     const [updateDescription, setUpdateDescription] = useState(false)
     const [updateContent, setUpdateContent] = useState(false)
+    const [updateCategory, setUpdateCategory] = useState(false)
+    const [updateThumbnail, setUpdateThumbnail] = useState(false)
 
 
     const resetStates = () => {
@@ -37,19 +41,19 @@ function EditPost({
         //setUpdateSlug(false)
         setUpdateDescription(false)
         setUpdateContent(false)
-        //setUpdateCategory(false)
-        //setUpdateThumbnail(false)
+        setUpdateCategory(false)
+        setUpdateThumbnail(false)
         setUpdateTime(false)
     }
 
 
     const [formData, setFormData] = useState({
-        title: '', 
+        title: '',
         time_read: '',
         description: '',
         category: '',
         status: '',
-        
+
     })
 
     const {
@@ -58,7 +62,6 @@ function EditPost({
         description,
         category,
         status,
-        thumbnail,
 
     } = formData
 
@@ -66,23 +69,49 @@ function EditPost({
         setFormData({ ...formData, [e.target.name]: e.target.value })
     }
 
+
     const [loading, setLoading] = useState(false)
+    const [showFullContent, setShowFullContent] = useState(false)
+    const [previewImage, setPreviewImage] = useState()
     const [content, setContent] = useState('')
+    const [thumbnail, setThumbnail] = useState()
+
+    const fileSelectedHandler = (e) => {
+        const file = e.target.files[0]
+        let reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onloadend = (e) => {
+            setPreviewImage(reader.result)
+        }
+        setThumbnail(file)
+    }
 
     const onSubmit = e => {
         e.preventDefault()
         const config = {
             headers: {
                 'Accept': 'application/json',
-                'Authorization': `JWT ${localStorage.getItem('access')}`
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `JWT ${localStorage.getItem('access')}`,
             }
         };
         const formData = new FormData()
         formData.append('title', title)
-        formData.append('slug', slug)
         formData.append('time_read', time_read)
         formData.append('description', description)
-        formData.append('content', content)
+        if (content) {
+            formData.append('content', content)
+        } else {
+            formData.append('content', '')
+        }
+        formData.append('category', category)
+        if (thumbnail) {
+            formData.append('thumbnail', thumbnail, thumbnail.name)
+        } else {
+            formData.append('thumbnail', '')
+        }
+
+        formData.append('slug', slug)
 
         const fetchData = async () => {
             setLoading(true)
@@ -91,26 +120,45 @@ function EditPost({
                     formData,
                     config)
                 if (res.status === 200) {
-                    setLoading(false)
-                    resetStates(false)  
                     await get_blog(slug)
                 } else {
-                    setLoading(false)
-                    resetStates(false)
                     alert('Error: no guardado')
+                }
+                setLoading(false)
+                resetStates(false)
+                setFormData({
+                    title: '',
+                    description: '',
+                    content: '',
+                    time_read: ''
+                })
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
                 }
 
             } catch (err) {
                 setLoading(false)
                 resetStates(false)
                 alert('Error al enviar')
+
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
+                }
             }
         }
         fetchData()
 
     }
-    if(!isAuthenticated){
-        return <Navigate to="/"/>
+    if (!isAuthenticated) {
+        return <Navigate to="/" />
     }
     return (
         <Layout>
@@ -118,7 +166,7 @@ function EditPost({
                 <title>LazyCat | Blog</title>
             </Helmet>
             {
-                post && isAuthenticated?
+                post && isAuthenticated ?
                     <>
                         <div className="">
                             <dl className="divide-y divide-gray-200">
@@ -154,17 +202,17 @@ function EditPost({
                                     </div>
                                 </div>
                                 {/* Fin div de titulo y botones */}
-                                
+
                                 {/*div de title*/}
                                 <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5">
                                     <dt className="text-sm font-medium text-gray-500">Title</dt>
                                     <dd className="mt-1 flex text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                                         {
                                             updateTitle ?
-                                            
+
                                                 <>
                                                     <form onSubmit={e => onSubmit(e)} className="flex w-full">
-                                                    
+
                                                         <span className="flex-grow">
                                                             <input
                                                                 value={title}
@@ -198,8 +246,9 @@ function EditPost({
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div
                                                             onClick={() => {
-                                                                formData.title=post.title
-                                                                setUpdateTitle(true)}}
+                                                                formData.title = post.title
+                                                                setUpdateTitle(true)
+                                                            }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                         >
                                                             Update
@@ -211,6 +260,67 @@ function EditPost({
                                     </dd>
                                 </div>
                                 {/*Termina el div de title*/}
+
+                                {/*div de thumbnail*/}
+                                <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5">
+                                    <dt className="text-sm font-medium text-gray-500">Thumbnail</dt>
+                                    <dd className="mt-1 flex text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                                        {
+                                            updateThumbnail ?
+
+                                                <>
+                                                    {
+                                                        previewImage &&
+                                                        <img src={previewImage} className="object-cover w-80 h-72 p-4" />
+                                                    }
+                                                    <form onSubmit={e => onSubmit(e)} className="flex w-full">
+
+                                                        <span className="flex-grow">
+                                                            <input
+                                                                type="file"
+                                                                name="thumbnail"
+                                                                onChange={e => fileSelectedHandler(e)}
+                                                                className="w-full py-3 px-2 border border-gray-900 rounded-lg"
+                                                                required
+                                                            />
+                                                        </span>
+                                                        <span className="ml-4 flex-shrink-0">
+                                                            <button
+                                                                type="submit"
+                                                                className="rounded-md mr-2 bg-white font-medium text-indigo-600 hover:text-indigo-500"
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <div
+                                                                onClick={() => setUpdateThumbnail(false)}
+                                                                className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
+                                                            >
+                                                                Cancel
+                                                            </div>
+                                                        </span>
+                                                    </form>
+                                                </>
+                                                :
+                                                <>
+                                                    <span className="flex-grow ">
+                                                        <img src={post.thumbnail} className="object-cover w-full h-72" />
+                                                    </span>
+                                                    <span className="ml-4 flex-shrink-0">
+                                                        <div
+                                                            onClick={() => {
+                                                                setUpdateThumbnail(true)
+                                                            }}
+                                                            className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
+                                                        >
+                                                            Update
+                                                        </div>
+                                                    </span>
+                                                </>
+                                        }
+
+                                    </dd>
+                                </div>
+                                {/*Termina el div de thumbnail*/}
 
                                 {/*div de time_read*/}
                                 <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5">
@@ -253,8 +363,9 @@ function EditPost({
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div
                                                             onClick={() => {
-                                                                formData.time_read=post.time_read
-                                                                setUpdateTime(true)}}
+                                                                formData.time_read = post.time_read
+                                                                setUpdateTime(true)
+                                                            }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                         >
                                                             Update
@@ -309,8 +420,9 @@ function EditPost({
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div
                                                             onClick={() => {
-                                                                formData.description=post.description
-                                                                setUpdateDescription(true)}}
+                                                                formData.description = post.description
+                                                                setUpdateDescription(true)
+                                                            }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                         >
                                                             Update
@@ -331,18 +443,18 @@ function EditPost({
                                             updateContent ?
                                                 <>
                                                     <form onSubmit={e => onSubmit(e)} className=" w-full">
-                                                        
+
                                                         <span className="flex-grow">
                                                             <CKEditor
                                                                 editor={ClassicEditor}
                                                                 data={post.content}
-                                                                onChange={(event, editor)=>{
-                                                                    const data= editor.getData()
+                                                                onChange={(event, editor) => {
+                                                                    const data = editor.getData()
                                                                     setContent(data)
                                                                 }}
 
-                                                                />
-                                                            
+                                                            />
+
                                                         </span>
                                                         <span className="ml-4 flex-shrink-0">
                                                             <button
@@ -364,12 +476,39 @@ function EditPost({
                                                 <>
                                                     <span className="flex-grow text-lg">
                                                         <div className="prose prose-lg max-w-6xl prose-indigo mx-auto mt-6 text-gray-500">
-                                                            <p  dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(post.content)}} />
+                                                            {
+                                                                showFullContent ?
+
+                                                                    <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }} />
+
+                                                                    :
+                                                                    <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content.length) > 250 ? DOMPurify.sanitize(post.content.slice(0, 249)) : DOMPurify.sanitize(post.content) }} />
+
+
+                                                            }
+                                                            {
+                                                                post.content.length > 250 ?
+                                                                    showFullContent ?
+                                                                        <button
+                                                                            className="w-full border bg-gray-200 text-gray-700"
+                                                                            onClick={() => setShowFullContent(false)}
+                                                                        >
+                                                                            Show Less
+                                                                        </button>
+                                                                        :
+                                                                        <button
+                                                                            className="w-full border bg-gray-200 text-gray-700"
+                                                                            onClick={() => setShowFullContent(true)}
+                                                                        >
+                                                                            Show more
+                                                                        </button>
+                                                                    : <></>
+                                                            }
                                                         </div>
                                                     </span>
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div
-                                                            onClick={() => {setUpdateContent(true)}}
+                                                            onClick={() => { setUpdateContent(true) }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                         >
                                                             Update
@@ -381,6 +520,127 @@ function EditPost({
                                     </dd>
                                 </div>
                                 {/*Termina el div de content*/}
+
+                                {/*div de categories*/}
+                                <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5">
+                                    <dt className="text-sm font-medium text-gray-500">Category</dt>
+                                    <dd className="mt-1 flex text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                                        {
+                                            updateCategory ?
+                                                <>
+                                                    <form onSubmit={e => onSubmit(e)} className="flex w-full">
+
+                                                        <span className="flex-grow">
+                                                            {
+                                                                categories &&
+                                                                categories !== null &&
+                                                                categories !== undefined &&
+                                                                categories.map(category => {
+                                                                    if (category.sub_categories.length === 0) {
+                                                                        return (
+                                                                            <div key={category.id} className='flex items-center h-5'>
+                                                                                <input
+                                                                                    onChange={e => onChange(e)}
+                                                                                    value={category.id.toString()}
+                                                                                    name='category'
+                                                                                    type='radio'
+                                                                                    required
+                                                                                    defaultChecked={category.id === (post.category && post.category.id)}
+                                                                                    className='focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded-full'
+                                                                                />
+                                                                                <label className="ml-3 text-lg dark:text-dark-txt text-gray-900 font-light">
+                                                                                    {category.name}
+                                                                                </label>
+                                                                            </div>
+                                                                        )
+                                                                    } else {
+
+                                                                        let result = []
+                                                                        result.push(
+                                                                            <div key={category.id} className='flex items-center h-5 mt-2'>
+                                                                                <input
+                                                                                    onChange={e => onChange(e)}
+                                                                                    value={category.id.toString()}
+                                                                                    name='category'
+                                                                                    type='radio'
+                                                                                    required
+                                                                                    defaultChecked={category.id === (post.category && post.category.id)}
+                                                                                    className='focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded-full'
+                                                                                />
+                                                                                <label className="ml-3 text-lg dark:text-dark-txt text-gray-900 font-regular">
+                                                                                    {category.name}
+                                                                                </label>
+                                                                            </div>
+                                                                        )
+
+                                                                        category.sub_categories.map(sub_category => {
+                                                                            result.push(
+                                                                                <div key={sub_category.id} className='flex items-center h-5 ml-2 mt-1'>
+                                                                                    <input
+                                                                                        onChange={e => onChange(e)}
+                                                                                        value={sub_category.id.toString()}
+                                                                                        name='category'
+                                                                                        type='radio'
+                                                                                        defaultChecked={sub_category.id === (post.category && post.category.id)}
+
+
+                                                                                        className='focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded-full'
+                                                                                    />
+                                                                                    <label className="ml-3 text-lg dark:text-dark-txt text-gray-900 font-light">
+                                                                                        {sub_category.name}
+                                                                                    </label>
+                                                                                </div>
+                                                                            )
+                                                                        })
+                                                                        return result
+                                                                    }
+
+                                                                })
+                                                            }
+                                                        </span>
+                                                        <span className="ml-4 flex-shrink-0">
+                                                            <button
+                                                                type="submit"
+                                                                className="rounded-md mr-2 bg-white font-medium text-indigo-600 hover:text-indigo-500"
+                                                            >
+                                                                Save
+                                                            </button>
+                                                            <div
+                                                                onClick={() => setUpdateCategory(false)}
+                                                                className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
+                                                            >
+                                                                Cancel
+                                                            </div>
+                                                        </span>
+                                                    </form>
+                                                </>
+                                                :
+                                                <>
+                                                    <span className="flex-grow text-lg">
+                                                        {
+                                                            post.category ?
+
+                                                                post.category.name
+                                                                :
+                                                                <p className=" w-full py-2 bg-gray-100 mt-4 text-lg font-regular text-gray-800 leading-8"></p>
+                                                        }
+                                                    </span>
+                                                    <span className="ml-4 flex-shrink-0">
+                                                        <div
+                                                            onClick={() => setUpdateCategory(true)}
+                                                            className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
+                                                        >
+                                                            Update
+                                                        </div>
+                                                    </span>
+                                                </>
+                                        }
+
+                                    </dd>
+                                </div>
+                                {/*Termina el div de categories*/}
+
+
                             </dl>
                         </div>
                     </> :
@@ -394,8 +654,10 @@ function EditPost({
 }
 const mapStateToProps = state => ({
     post: state.blog.post,
-    isAuthenticated: state.auth.isAuthenticated
+    isAuthenticated: state.auth.isAuthenticated,
+    categories: state.categories.categories
 })
 export default connect(mapStateToProps, {
     get_blog,
+    get_categories
 })(EditPost)
