@@ -1,9 +1,9 @@
 import BlogList from "components/blog/BlogList"
 import Layout from "hocs/layout/Layout"
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { connect } from "react-redux"
-import { Navigate, useParams } from "react-router-dom"
+import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { get_author_blog_list, get_author_blog_list_page, get_blog } from "redux/actions/blog/blog"
 import { get_categories } from "redux/actions/categories/categories"
 import { PaperClipIcon } from '@heroicons/react/20/solid'
@@ -11,6 +11,8 @@ import axios from "axios"
 import DOMPurify from "dompurify"
 import { CKEditor } from '@ckeditor/ckeditor5-react'
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
+import { Dialog, Transition } from '@headlessui/react'
+import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 function EditPost({
     post,
     get_blog,
@@ -18,6 +20,9 @@ function EditPost({
     get_categories,
     categories,
 }) {
+    // Cosa de modal
+    const [open, setOpen] = useState(false)
+    const [openDelete, setOpenDelete] = useState(false)
 
     const params = useParams()
     const slug = params.slug
@@ -35,10 +40,10 @@ function EditPost({
     const [updateCategory, setUpdateCategory] = useState(false)
     const [updateThumbnail, setUpdateThumbnail] = useState(false)
 
+    const navigate = useNavigate()
 
     const resetStates = () => {
         setUpdateTitle(false)
-        //setUpdateSlug(false)
         setUpdateDescription(false)
         setUpdateContent(false)
         setUpdateCategory(false)
@@ -85,7 +90,7 @@ function EditPost({
         }
         setThumbnail(file)
     }
-
+    //Cuando hace Save a cualquier cosa pasa esto
     const onSubmit = e => {
         e.preventDefault()
         const config = {
@@ -143,7 +148,8 @@ function EditPost({
             } catch (err) {
                 setLoading(false)
                 resetStates(false)
-                alert('Error al enviar')
+                alert('Error al enviar: ', err)
+                console.log(err)
 
                 if (thumbnail) {
                     setThumbnail(null)
@@ -157,6 +163,186 @@ function EditPost({
         fetchData()
 
     }
+    //submit para cuando quiera hacer Draft
+    const onSubmitDraft = e => {
+        e.preventDefault()
+        const config = {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `JWT ${localStorage.getItem('access')}`,
+            }
+        };
+
+        const formData = new FormData()
+        formData.append('slug', slug)
+
+
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const res = await axios.put(`${process.env.REACT_APP_API_URL}/api/blog/draft`,
+                    formData,
+                    config)
+                if (res.status === 200) {
+                    await get_blog(slug)
+                } else {
+                    alert('Error: no guardado')
+                }
+                setLoading(false)
+                resetStates(false)
+                setFormData({
+                    title: '',
+                    description: '',
+                    content: '',
+                    time_read: ''
+                })
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
+                }
+
+            } catch (err) {
+                setLoading(false)
+                resetStates(false)
+                alert('Error al enviar')
+
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
+                }
+            }
+        }
+        fetchData()
+        setOpen(false)
+
+    }
+
+    //submit para cuando quiera hacer Publish
+    const onSubmitPublish = e => {
+        e.preventDefault()
+        const config = {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `JWT ${localStorage.getItem('access')}`,
+            }
+        };
+
+        const formData = new FormData()
+        formData.append('slug', slug)
+
+
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const res = await axios.put(`${process.env.REACT_APP_API_URL}/api/blog/publish`,
+                    formData,
+                    config)
+                if (res.status === 200) {
+                    await get_blog(slug)
+                } else {
+                    alert('Error: no guardado')
+                }
+                setLoading(false)
+                resetStates(false)
+                setFormData({
+                    title: '',
+                    description: '',
+                    content: '',
+                    time_read: ''
+                })
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
+                }
+
+            } catch (err) {
+                setLoading(false)
+                resetStates(false)
+                alert('Error al enviar')
+
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
+                }
+            }
+        }
+        fetchData()
+        setOpen(false)
+
+    }
+
+    //submit para cuando quiera hacer Delete
+    const onSubmitDelete = e => {
+        e.preventDefault()
+        const config = {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `JWT ${localStorage.getItem('access')}`,
+            }
+        };
+
+        const formData = new FormData()
+        formData.append('slug', slug)
+
+
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const res = await axios.delete(`${process.env.REACT_APP_API_URL}/api/blog/delete/${slug}`,
+                    formData,
+                    config)
+                if (res.status === 200) {
+                    navigate(-1)
+                } else {
+                    alert('Error: no guardado')
+                }
+                setLoading(false)
+                resetStates(false)
+                setFormData({
+                    title: '',
+                    description: '',
+                    content: '',
+                    time_read: ''
+                })
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
+                }
+
+            } catch (err) {
+                setLoading(false)
+                resetStates(false)
+                alert('Error al enviar')
+
+                if (thumbnail) {
+                    setThumbnail(null)
+                    setPreviewImage(null)
+                }
+                if (content) {
+                    setContent('')
+                }
+            }
+        }
+        fetchData()
+        setOpen(false)
+
+    }
+
     if (!isAuthenticated) {
         return <Navigate to="/" />
     }
@@ -181,23 +367,30 @@ function EditPost({
                                         </div>
                                         <div className="ml-4 mt-4 flex-shrink-0">
                                             <button
-                                                type="button"
+                                                onClick={e => setOpenDelete(true)}
                                                 className="relative mx-1 inline-flex items-center rounded-md border border-transparent bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                             >
                                                 Delete
                                             </button>
                                             <button
-                                                type="button"
+                                                onClick={e => setOpen(true)}
                                                 className="relative mx-1 inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                             >
-                                                Publish
+                                                {
+                                                    post.status === 'published' ?
+                                                        <>Draft</>
+                                                        :
+                                                        <>Publish</>
+                                                }
                                             </button>
-                                            <button
+                                            <a
                                                 type="button"
+                                                href={`${process.env.REACT_APP_URL}/blog/${post.slug}`}
+                                                target="_blank"
                                                 className="relative mx-1 inline-flex items-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                             >
                                                 View Post
-                                            </button>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -232,7 +425,7 @@ function EditPost({
                                                                 Save
                                                             </button>
                                                             <div
-                                                                onClick={() => setUpdateTitle(false)}
+                                                                onClick={() =>setUpdateTitle(false)}
                                                                 className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                             >
                                                                 Cancel
@@ -247,6 +440,7 @@ function EditPost({
                                                         <div
                                                             onClick={() => {
                                                                 formData.title = post.title
+                                                                resetStates()
                                                                 setUpdateTitle(true)
                                                             }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
@@ -292,7 +486,12 @@ function EditPost({
                                                                 Save
                                                             </button>
                                                             <div
-                                                                onClick={() => setUpdateThumbnail(false)}
+                                                                onClick={() => {
+                                                                    setUpdateThumbnail(false)
+                                                                    setThumbnail(null)
+                                                                    setPreviewImage(null)
+                                                                }
+                                                                }
                                                                 className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                             >
                                                                 Cancel
@@ -308,6 +507,7 @@ function EditPost({
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div
                                                             onClick={() => {
+                                                                resetStates()
                                                                 setUpdateThumbnail(true)
                                                             }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
@@ -364,6 +564,7 @@ function EditPost({
                                                         <div
                                                             onClick={() => {
                                                                 formData.time_read = post.time_read
+                                                                resetStates()
                                                                 setUpdateTime(true)
                                                             }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
@@ -421,6 +622,7 @@ function EditPost({
                                                         <div
                                                             onClick={() => {
                                                                 formData.description = post.description
+                                                                resetStates()
                                                                 setUpdateDescription(true)
                                                             }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
@@ -498,7 +700,9 @@ function EditPost({
                                                                         :
                                                                         <button
                                                                             className="w-full border bg-gray-200 text-gray-700"
-                                                                            onClick={() => setShowFullContent(true)}
+                                                                            onClick={() => {
+                                                                                resetStates()
+                                                                                setShowFullContent(true)}}
                                                                         >
                                                                             Show more
                                                                         </button>
@@ -508,7 +712,9 @@ function EditPost({
                                                     </span>
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div
-                                                            onClick={() => { setUpdateContent(true) }}
+                                                            onClick={() => { 
+                                                                resetStates()
+                                                                setUpdateContent(true) }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                         >
                                                             Update
@@ -627,7 +833,10 @@ function EditPost({
                                                     </span>
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div
-                                                            onClick={() => setUpdateCategory(true)}
+                                                            onClick={() => {
+                                                                resetStates()
+                                                                setUpdateCategory(true)
+                                                            }}
                                                             className="cursor-pointer inline-flex rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500"
                                                         >
                                                             Update
@@ -643,8 +852,163 @@ function EditPost({
 
                             </dl>
                         </div>
+                        {/*Modal para publish/draft*/}
+                        <Transition.Root show={open} as={Fragment}>
+                            <Dialog as="div" className="relative z-10" onClose={setOpen}>
+                                <Transition.Child
+                                    as={Fragment}
+                                    enter="ease-out duration-300"
+                                    enterFrom="opacity-0"
+                                    enterTo="opacity-100"
+                                    leave="ease-in duration-200"
+                                    leaveFrom="opacity-100"
+                                    leaveTo="opacity-0"
+                                >
+                                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+                                </Transition.Child>
+
+                                <div className="fixed inset-0 z-10 overflow-y-auto">
+                                    <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                                        <Transition.Child
+                                            as={Fragment}
+                                            enter="ease-out duration-300"
+                                            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                            enterTo="opacity-100 translate-y-0 sm:scale-100"
+                                            leave="ease-in duration-200"
+                                            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                                            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                        >
+                                            <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:p-6">
+                                                <div>
+                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                                                        {
+                                                            post.title && post.description && post.slug && post.content ?
+                                                                <CheckIcon className="h-6 w-6 text-green-600" aria-hidden="true" />
+                                                                :
+                                                                <XMarkIcon className="h-6 w-6 text-rose-600" aria-hidden="true" />
+                                                        }
+                                                    </div>
+                                                    <div className="mt-3 text-center sm:mt-5">
+                                                        <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                                                            {
+                                                                post.status === 'published' ?
+                                                                    <span>Draft</span>
+                                                                    :
+                                                                    <span>Publish</span>
+                                                            }
+                                                        </Dialog.Title>
+
+                                                        <div className="mt-2">
+                                                            {
+                                                                post.title && post.description && post.slug && post.content ?
+                                                                    <>
+                                                                    </>
+                                                                    :
+                                                                    <p className="text-sm text-gray-500">
+                                                                        To publish this post, you must complete all components
+                                                                    </p>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {
+                                                    (post.title && post.description && post.slug && post.content) &&
+                                                    <>
+                                                        {post.status === 'published' ?
+                                                            <form onSubmit={e => onSubmitDraft(e)} className="mt-5 sm:mt-6">
+                                                                <button
+                                                                    type="submit"
+                                                                    className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:text-sm"
+                                                                >
+                                                                    <span>Draft</span>
+                                                                </button>
+                                                            </form>
+                                                            :
+                                                            <form onSubmit={e => onSubmitPublish(e)} className="mt-5 sm:mt-6">
+                                                                <button
+                                                                    type="submit"
+                                                                    className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:text-sm"
+                                                                >
+                                                                    <span>Publish</span>
+                                                                </button>
+                                                            </form>}
+
+                                                    </>
+                                                }
+                                            </Dialog.Panel>
+                                        </Transition.Child>
+                                    </div>
+                                </div>
+                            </Dialog>
+                        </Transition.Root>
+
+                        {/*Modal para delete*/}
+                        <Transition.Root show={openDelete} as={Fragment}>
+                            <Dialog as="div" className="relative z-10" onClose={setOpenDelete}>
+                                <Transition.Child
+                                    as={Fragment}
+                                    enter="ease-out duration-300"
+                                    enterFrom="opacity-0"
+                                    enterTo="opacity-100"
+                                    leave="ease-in duration-200"
+                                    leaveFrom="opacity-100"
+                                    leaveTo="opacity-0"
+                                >
+                                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+                                </Transition.Child>
+
+                                <div className="fixed inset-0 z-10 overflow-y-auto">
+                                    <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                                        <Transition.Child
+                                            as={Fragment}
+                                            enter="ease-out duration-300"
+                                            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                            enterTo="opacity-100 translate-y-0 sm:scale-100"
+                                            leave="ease-in duration-200"
+                                            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                                            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                        >
+                                            <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl sm:p-6">
+                                                <div>
+                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+
+                                                        <XMarkIcon className="h-6 w-6 text-rose-600" aria-hidden="true" />
+
+                                                    </div>
+                                                    <div className="mt-3 text-center sm:mt-5">
+                                                        <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+
+                                                            <span>Delete</span>
+
+                                                        </Dialog.Title>
+
+                                                        <div className="mt-2">
+
+                                                            <p className="text-sm text-gray-500">
+                                                                Delete
+                                                            </p>
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <form onSubmit={e => onSubmitDelete(e)} className="mt-5 sm:mt-6">
+                                                    <button
+                                                        type="submit"
+                                                        className="inline-flex w-full justify-center rounded-md border border-transparent bg-rose-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 sm:text-sm"
+                                                    >
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </form>
+                                            </Dialog.Panel>
+                                        </Transition.Child>
+                                    </div>
+                                </div>
+                            </Dialog>
+                        </Transition.Root>
                     </> :
                     <>
+                        {/*Si no detecta post y estas autenticado, sale esto*/}
                         Loading
                     </>
             }

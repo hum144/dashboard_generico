@@ -1,6 +1,7 @@
+import axios from "axios"
 import BlogList from "components/blog/BlogList"
 import Layout from "hocs/layout/Layout"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { connect } from "react-redux"
 import { get_author_blog_list, get_author_blog_list_page } from "redux/actions/blog/blog"
@@ -20,7 +21,6 @@ function Blog({
         get_categories()
     }, [])
 
-
     return (
         <Layout>
             <Helmet>
@@ -36,7 +36,29 @@ function Blog({
                     </div>
                     <div className="ml-4 mt-4 flex-shrink-0">
                         <button
-                            type="button"
+                            onClick={()=>{
+                                const config = {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `JWT ${localStorage.getItem('access')}`,
+                                    }
+                                };
+                                const body=JSON.stringify({
+
+                                })
+                                const fechtData = async()=>{
+                                    try{
+                                        const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/blog/create`, body, config)
+                                        if(res.status === 200){
+                                            get_author_blog_list()
+                                        }
+                                    }catch(err){
+                                        alert('Error al crear')
+                                    }
+                                }
+                                fechtData()
+                            }}
                             className="relative inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                         >
                             Create post
