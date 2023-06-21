@@ -90,6 +90,7 @@ function EditPost({
         }
         setThumbnail(file)
     }
+
     //Cuando hace Save a cualquier cosa pasa esto
     const onSubmit = e => {
         e.preventDefault()
@@ -163,6 +164,7 @@ function EditPost({
         fetchData()
 
     }
+    
     //submit para cuando quiera hacer Draft
     const onSubmitDraft = e => {
         e.preventDefault()
@@ -502,7 +504,7 @@ function EditPost({
                                                 :
                                                 <>
                                                     <span className="flex-grow ">
-                                                        <img src={post.thumbnail} className="object-cover w-full h-72" />
+                                                        <img src={`http://localhost:8000${post.thumbnail}`} className="object-cover w-full h-72" />
                                                     </span>
                                                     <span className="ml-4 flex-shrink-0">
                                                         <div

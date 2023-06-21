@@ -27,7 +27,7 @@ function BlogCardHorizontal({data,index}){
                 <figure className="lg:flex-shrink-0">
                   {
                     data.thumbnail?
-                    <img id={index} className="h-64 lg:w-96 w-full object-cover rounded" src={data.thumbnail} alt="" />
+                    <img id={index} className="h-64 lg:w-96 w-full object-cover rounded" src={`http://localhost:8000${data.thumbnail}`} alt="" />
                     :
                     <div className=" h-64 lg:w-96 w-full object-cover rounded bg-gray-100"></div>
                   }
